@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agri-Nexus | Digital Twin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌾</text></svg>">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{font-family:Inter,system-ui,sans-serif;background:#f6f8f3;color:#14231a;
+background-image:radial-gradient(circle at 10% 0%,#e3f4d3 0,transparent 30%),radial-gradient(circle at 95% 15%,#d9f0f7 0,transparent 28%)}
+.card{background:#fff;border:1px solid #e5eadf;border-radius:1.1rem;box-shadow:0 1px 2px rgba(20,35,26,.04),0 8px 24px rgba(20,35,26,.05)}
+.chip{border:1px solid #d6e2cc;background:#f3f8ee;color:#2f5d2a;border-radius:999px;padding:.25rem .7rem;font-size:.75rem;cursor:pointer;transition:.15s}
+.chip:hover{background:#e3f1d8}
+.tab{padding:.3rem .8rem;border-radius:.6rem;font-size:.75rem;font-weight:600;border:1px solid #e0e6da;cursor:pointer;background:#fff}
+.tab.on{background:#16a34a;color:#fff;border-color:#16a34a}
+.cell{aspect-ratio:1.25;border-radius:.45rem;cursor:pointer;transition:.2s;border:2px solid transparent}
+.cell:hover{transform:scale(1.06)}.cell.sel{border-color:#14231a}
+.dot{animation:p 2s infinite}@keyframes p{0%{box-shadow:0 0 0 0 rgba(22,163,74,.6)}70%{box-shadow:0 0 0 8px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+.fade{animation:f .3s ease}@keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+input[type=range]{accent-color:#16a34a;width:100%}
+.typing span{display:inline-block;width:6px;height:6px;margin:0 1px;background:#9bb08f;border-radius:50%;animation:b 1s infinite}
+.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+@keyframes b{50%{transform:translateY(-4px)}}
+</style>
+</head>
+<body class="min-h-screen p-3 md:p-7 text-sm">
+<div class="max-w-7xl mx-auto flex flex-col gap-5">
+
+<header class="card p-4 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-11 h-11 rounded-2xl bg-green-600 text-white grid place-items-center text-xl">🌾</div>
+    <div><h1 class="text-xl font-extrabold tracking-wide">AGRI-NEXUS</h1><p class="text-xs text-green-700">Give Every Farm a Digital Future.</p></div>
+  </div>
+  <div class="text-right">
+    <p class="font-semibold">Demo Farm · Udupi, Karnataka</p>
+    <p class="text-xs text-slate-500"><span id="clock"></span> · Online <span class="inline-block w-2 h-2 bg-green-600 rounded-full dot ml-1"></span></p>
+  </div>
+</header>
+
+<main class="grid lg:grid-cols-12 gap-5">
+<div class="lg:col-span-8 flex flex-col gap-5">
+
+  <section class="card p-5 border-l-4 border-l-green-600">
+    <h2 class="text-lg font-extrabold" id="greet">Good morning, Farmer</h2>
+    <p class="text-slate-500 mb-3">Your farm has <b id="alertCount">3</b> things that need attention today.</p>
+    <div id="alerts" class="grid md:grid-cols-3 gap-3"></div>
+  </section>
+
+  <section class="card p-5">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+      <h2 class="text-lg font-extrabold">🛰️ Farm Digital Twin <span class="text-xs font-normal text-slate-400">· 2.4 ha rice</span></h2>
+      <button id="syncBtn" class="tab">Sync Satellite</button>
+    </div>
+    <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5"></div>
+
+    <div class="grid md:grid-cols-5 gap-5">
+      <div class="md:col-span-3">
+        <div class="flex gap-2 mb-2" id="layers">
+          <button class="tab on" data-l="ndvi">Crop health</button>
+          <button class="tab" data-l="moisture">Moisture</button>
+          <button class="tab" data-l="disease">Disease risk</button>
+        </div>
+        <div id="grid" class="grid grid-cols-6 gap-1.5"></div>
+        <div class="flex justify-between text-[11px] text-slate-400 mt-2"><span>Low</span><div class="flex-1 mx-2 h-1.5 rounded self-center" id="legend"></div><span>High</span></div>
+      </div>
+      <div class="md:col-span-2 bg-slate-50 rounded-xl p-4 text-xs" id="zoneInfo"></div>
+    </div>
+  </section>
+
+  <section class="card p-5">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+      <h3 class="text-lg font-extrabold">⏳ Farm Time Machine</h3>
+      <div class="flex gap-2 flex-wrap" id="presets">
+        <button class="tab on" data-p="normal">Normal</button>
+        <button class="tab" data-p="drought">Drought</button>
+        <button class="tab" data-p="flood">Heavy rain</button>
+        <button class="tab" data-p="mulch">Drought + mulch</button>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-3 gap-4 mb-3 text-xs">
+      <label>Rainfall change: <b id="rainV">0%</b><input id="rain" type="range" min="-50" max="50" value="0"></label>
+      <label>Irrigation level: <b id="irrV">50%</b><input id="irr" type="range" min="0" max="100" value="50"></label>
+      <label class="flex items-center gap-2 mt-4"><input type="checkbox" id="mulch" class="accent-green-600 w-4 h-4"> Apply organic mulch</label>
+    </div>
+    <div class="h-60"><canvas id="chart"></canvas></div>
+    <p id="insight" class="mt-3 p-3 rounded-lg bg-green-50 text-slate-700 text-sm"></p>
+  </section>
+</div>
+
+<div class="lg:col-span-4 flex flex-col gap-5">
+  <section class="card flex flex-col overflow-hidden" style="height:520px">
+    <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+      <div><h2 class="font-extrabold">🤖 Krishi Copilot</h2><p class="text-xs text-slate-400">Reads your live twin data</p></div>
+      <button id="mic" class="chip font-bold">🎤 Talk</button>
+    </div>
+    <div id="chat" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3"></div>
+    <div id="chips" class="px-4 pb-2 flex gap-1.5 flex-wrap"></div>
+    <form id="form" class="p-3 border-t border-slate-100 flex gap-2">
+      <input id="inp" placeholder="Ask about water, disease, crops, price…" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-green-600">
+      <button class="bg-green-600 hover:bg-green-700 text-white px-4 rounded-lg font-semibold">Send</button>
+    </form>
+  </section>
+
+  <section class="card p-5">
+    <h3 class="font-extrabold mb-1">🧪 Farm Experiment Engine</h3>
+    <p class="text-xs text-slate-500 mb-3">Test on a small control plot before the whole farm.</p>
+    <select id="exp" class="w-full border border-slate-200 rounded-lg px-3 py-2 mb-3 bg-white">
+      <option value="mulch">Organic mulch on 0.2 ha</option>
+      <option value="drip">Reduced irrigation on 0.2 ha</option>
+      <option value="cover">Cover crop on 0.2 ha</option>
+    </select>
+    <button id="runExp" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg">Run 14-day experiment</button>
+    <div id="expOut" class="mt-3"></div>
+  </section>
+
+  <section class="card p-5">
+    <h3 class="font-extrabold mb-3">🌦️ 5-day forecast</h3>
+    <div id="fc" class="grid grid-cols-5 gap-2 text-center text-xs"></div>
+    <h3 class="font-extrabold mt-5 mb-2">💰 Mandi prices <span class="text-xs font-normal text-slate-400">(₹/quintal, simulated)</span></h3>
+    <div id="mandi" class="text-xs flex flex-col gap-1.5"></div>
+  </section>
+</div>
+</main>
+<p class="text-center text-xs text-slate-400">Demo with simulated data · Connect a backend to use live Gemini, satellite and weather APIs.</p>
+</div>
+
+<script>
+/* ============ 1. SIMULATED API LAYER (swap these for real endpoints) ============ */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const rnd = (() => { let s = 7; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const DB = {
+  base: { moisture: 41, temp: 31, ndvi: 83, disease: 12 },
+  zones: Array.from({length: 30}, () => ({ ndvi: 70 + rnd()*26, moisture: 30 + rnd()*26, disease: 4 + rnd()*26 })),
+  forecast: [['Today','⛅',31,20],['Wed','🌧️',28,78],['Thu','⛈️',27,85],['Fri','🌦️',29,50],['Sat','☀️',32,10]],
+  mandi: [['Rice (Jaya)',2350,'+2.1%'],['Black gram',7400,'+4.8%'],['Coconut',3150,'-0.6%'],['Arecanut',48500,'+1.2%']],
+  alerts: [
+    {t:'High priority',c:'red',i:'🌧️',h:'Heavy rain in 36 hours (78% chance)',a:'Delay irrigation to prevent waterlogging.'},
+    {t:'Opportunity',c:'green',i:'🌱',h:'Ideal window for cover crop',a:'High soil moisture suits regenerative intercropping.'},
+    {t:'Watch',c:'amber',i:'🐛',h:'Zone C4 shows early leaf stress',a:'Scout the zone and upload a photo for diagnosis.'}]
+};
+const API = {
+  async farm(){ await sleep(250); return DB.base; },
+  async forecast(){ await sleep(200); return DB.forecast; },
+  async prices(){ await sleep(200); return DB.mandi; },
+  async syncSatellite(){ await sleep(1200); DB.zones.forEach(z => { z.ndvi = Math.min(98, Math.max(60, z.ndvi + (rnd()-.5)*4)); }); return DB.zones; },
+  async simulate({rain, irr, mulch}){
+    await sleep(120);
+    let m = 41 + rain*.5 + (irr-50)*.2 + (mulch ? 6 : 0);
+    m = Math.max(8, Math.min(90, m));
+    const pen = m < 30 ? (30-m)*1.3 : m > 60 ? (m-60)*.9 : 0;
+    const yieldC = [65,70,80,81,83,85,88].map((v,i) => i < 4 ? v : Math.max(25, v - pen*(i-3)/2.2));
+    const water = [20,22,25,24,23,20,18].map((v,i) => i < 4 ? v : v + (m<35 ? (35-m)*.5*(i-3)/1.5 : 0));
+    return { moisture: Math.round(m), health: Math.round(83 - pen*.7), disease: Math.round(12 + Math.max(0, m-50)*.8), yieldC, water, pen };
+  },
+  async experiment(type){
+    await sleep(1400);
+    return { mulch:{metric:'Moisture retained',c:41,t:49,u:'%',tip:'Mulch held ~8 pts more moisture. Roll out to high-slope zones first.'},
+             drip:{metric:'Water used',c:100,t:72,u:'%',tip:'Yield held steady with 28% less water. Safe to scale gradually.'},
+             cover:{metric:'Soil nitrogen index',c:54,t:63,u:'',tip:'Nitrogen improved. Plant after the rain window passes.'} }[type];
+  },
+  async ask(q, ctx){
+    await sleep(700 + Math.random()*500);
+    q = q.toLowerCase(); const m = ctx.moisture;
+    if (/price|mandi|sell|market|rate/.test(q)) return `Black gram is up <b>4.8%</b> at ₹7,400/quintal, while rice is steady at ₹2,350. If you store, hold rice 2 weeks; legumes are trending up.`;
+    if (/water|rain|irrigat/.test(q)) return `Rain chance is <b>78%</b> in 36 hours and your soil moisture is <b>${m}%</b>, so skip irrigation. Clear drainage channels in zones C3 to C5.`;
+    if (/disease|yellow|sick|blight|pest|leaf/.test(q)) return `Disease risk is <b>${ctx.disease}%</b> (low). Zone C4 shows mild stress: scout it tomorrow. Wet spells raise blast risk, so avoid extra nitrogen until rain passes.`;
+    if (/crop|plant|grow|next|season|legume/.test(q)) return `Your soil shows high nitrogen and moderate pH. A <b>Black Gram</b> rotation next season should cut fertiliser cost and improve returns. Test it on 0.2 ha using the Experiment Engine.`;
+    if (/fertili|urea|nutri|soil/.test(q)) return `Soil is nitrogen-rich, so skip urea this cycle. Add potash at panicle initiation and compost now to build organic carbon.`;
+    if (/drought|dry|heat/.test(q)) return `Try the <b>Drought + mulch</b> preset in the Time Machine. Mulch plus 30% less irrigation keeps crop health near baseline in simulation.`;
+    return `I'm checking your twin: health <b>${ctx.health}%</b>, moisture <b>${m}%</b>. Ask me about water, disease, crops, fertiliser or prices.`;
+  }
+};
+
+/* ============ 2. STATE + RENDER ============ */
+const S = { layer:'ndvi', sel:null, ctx:{moisture:41,health:83,disease:12} };
+const $ = id => document.getElementById(id);
+const hr = new Date().getHours();
+$('greet').textContent = (hr<12?'Good morning':hr<17?'Good afternoon':'Good evening') + ', Farmer';
+$('clock').textContent = new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+
+const colorMap = {red:'bg-red-50 border-red-200 text-red-700', green:'bg-green-50 border-green-200 text-green-700', amber:'bg-amber-50 border-amber-200 text-amber-700'};
+$('alerts').innerHTML = DB.alerts.map(a => `<div class="border rounded-xl p-3 fade ${colorMap[a.c]}"><div class="flex justify-between text-[11px] font-bold uppercase mb-1"><span>${a.t}</span><span>${a.i}</span></div><p class="font-semibold text-slate-800">${a.h}</p><p class="text-xs text-slate-600 mt-1"><b>Action:</b> ${a.a}</p></div>`).join('');
+
+function stats(d){
+  const items = [['💧','Soil moisture',d.moisture+'%','text-blue-600'],['🌡️','Temperature','31°C','text-orange-500'],['🌿','Crop health',d.health+'%','text-green-600'],['🐛','Disease risk',d.disease+'%', d.disease>25?'text-red-600':'text-amber-600']];
+  $('stats').innerHTML = items.map(([i,l,v,c]) => `<div class="rounded-xl bg-slate-50 p-3 text-center"><div class="text-2xl">${i}</div><p class="text-[11px] uppercase text-slate-500 mt-1">${l}</p><p class="text-xl font-extrabold ${c}">${v}</p></div>`).join('');
+}
+
+const scales = { ndvi:['#ef4444','#eab308','#16a34a'], moisture:['#f59e0b','#67e8f9','#2563eb'], disease:['#16a34a','#eab308','#ef4444'] };
+function mix(a,b,t){ const p=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)); const x=p(a),y=p(b); return `rgb(${x.map((v,i)=>Math.round(v+(y[i]-v)*t)).join(',')})`; }
+function shade(layer, v){ const [lo,mid,hi]=scales[layer]; const rng = layer==='disease'?[4,30]:layer==='moisture'?[30,56]:[70,96]; const t=Math.max(0,Math.min(1,(v-rng[0])/(rng[1]-rng[0]))); return t<.5?mix(lo,mid,t*2):mix(mid,hi,(t-.5)*2); }
+function drawGrid(){
+  $('grid').innerHTML = DB.zones.map((z,i) => `<div class="cell ${S.sel===i?'sel':''}" data-i="${i}" style="background:${shade(S.layer,z[S.layer])}" title="Zone ${String.fromCharCode(65+Math.floor(i/6))}${i%6+1}"></div>`).join('');
+  const [a,b,c] = scales[S.layer]; $('legend').style.background = `linear-gradient(90deg,${a},${b},${c})`;
+  zoneInfo();
+}
+function zoneInfo(){
+  if (S.sel===null) { $('zoneInfo').innerHTML = '<p class="text-slate-500">👆 Tap any zone on the field map to inspect it.</p>'; return; }
+  const z = DB.zones[S.sel], n = String.fromCharCode(65+Math.floor(S.sel/6))+(S.sel%6+1);
+  const rec = z.disease>20 ? 'Scout for blast. Avoid extra nitrogen.' : z.moisture<35 ? 'Dry patch. Consider mulching.' : z.ndvi>88 ? 'Thriving. Good candidate for a yield benchmark.' : 'Healthy. No action needed.';
+  $('zoneInfo').innerHTML = `<p class="font-extrabold text-base mb-2">Zone ${n}</p><div class="flex flex-col gap-1"><p>🌿 Health <b>${z.ndvi.toFixed(0)}%</b></p><p>💧 Moisture <b>${z.moisture.toFixed(0)}%</b></p><p>🐛 Disease risk <b>${z.disease.toFixed(0)}%</b></p></div><p class="mt-3 p-2 rounded bg-white border border-slate-200">💡 ${rec}</p>`;
+}
+$('grid').addEventListener('click', e => { const c = e.target.closest('.cell'); if (!c) return; S.sel = +c.dataset.i; drawGrid(); });
+$('layers').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.layer = b.dataset.l; [...$('layers').children].forEach(x => x.classList.toggle('on', x===b)); drawGrid(); });
+$('syncBtn').onclick = async () => { $('syncBtn').textContent = 'Syncing…'; await API.syncSatellite(); drawGrid(); $('syncBtn').textContent = '✓ Synced just now'; setTimeout(() => $('syncBtn').textContent = 'Sync Satellite', 2500); };
+
+/* ============ 3. TIME MACHINE ============ */
+const chart = new Chart($('chart'), {
+  type:'line',
+  data:{ labels:['Day 1','Day 10','Day 20','Day 30','Today','+10 Days','+20 Days'], datasets:[
+    {label:'Yield potential (%)',data:[],borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.1)',fill:true,tension:.4,borderWidth:2.5},
+    {label:'Water demand (L/m²)',data:[],borderColor:'#2563eb',borderDash:[5,5],tension:.4,borderWidth:2} ]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#475569'}}},scales:{y:{grid:{color:'#eef2ea'}},x:{grid:{display:false}}}}
+});
+const presets = { normal:[0,50,false], drought:[-30,50,false], flood:[40,50,false], mulch:[-30,30,true] };
+let simToken = 0;
+async function simulate(){
+  const rain = +$('rain').value, irr = +$('irr').value, mulch = $('mulch').checked, tok = ++simToken;
+  $('rainV').textContent = (rain>0?'+':'')+rain+'%'; $('irrV').textContent = irr+'%';
+  const r = await API.simulate({rain, irr, mulch}); if (tok !== simToken) return;
+  chart.data.datasets[0].data = r.yieldC; chart.data.datasets[1].data = r.water;
+  const bad = r.pen > 6; chart.data.datasets[0].borderColor = bad ? '#dc2626' : '#16a34a'; chart.data.datasets[0].backgroundColor = bad ? 'rgba(220,38,38,.1)' : 'rgba(22,163,74,.1)';
+  chart.update();
+  S.ctx = {moisture:r.moisture, health:r.health, disease:r.disease}; stats(S.ctx);
+  const end = Math.round(r.yieldC[6]);
+  $('insight').innerHTML = r.pen < 1 ? `✅ <b>Stable outlook.</b> Projected yield potential reaches <b>${end}%</b> in 20 days. Farm Memory shows a similar Kharif pattern last year.`
+    : r.moisture < 30 ? `⚠️ <b>Drought stress.</b> Moisture falls to <b>${r.moisture}%</b> and yield potential drops to <b>${end}%</b>. Mulch plus timed irrigation recovers most of the loss.`
+    : `⚠️ <b>Waterlogging risk.</b> Moisture climbs to <b>${r.moisture}%</b>, yield drops to <b>${end}%</b>, disease risk rises to ${r.disease}%. Clear drainage channels now.`;
+}
+['rain','irr','mulch'].forEach(id => $(id).addEventListener('input', () => { [...$('presets').children].forEach(x => x.classList.remove('on')); simulate(); }));
+$('presets').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const [r,i,m] = presets[b.dataset.p]; $('rain').value = r; $('irr').value = i; $('mulch').checked = m; [...$('presets').children].forEach(x => x.classList.toggle('on', x===b)); simulate(); });
+
+/* ============ 4. COPILOT ============ */
+const chat = $('chat');
+function msg(html, user){ const d = document.createElement('div'); d.className = 'fade rounded-2xl px-3 py-2 max-w-[88%] ' + (user ? 'self-end bg-green-600 text-white' : 'self-start bg-slate-100'); d.innerHTML = html; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; return d; }
+async function send(q){
+  if (!q.trim()) return;
+  msg(q.replace(/</g,'&lt;'), true);
+  const t = msg('<span class="typing"><span></span><span></span><span></span></span>');
+  const a = await API.ask(q, S.ctx); t.innerHTML = '<b class="text-green-700">Krishi AI</b><br>' + a; chat.scrollTop = chat.scrollHeight;
+}
+msg('Hello Farmer 👋 I have analysed your 2.4 ha rice crop. Satellite health is <b>83%</b>. Ask me anything or tap a suggestion.');
+$('chips').innerHTML = ['Should I irrigate?','Disease check','Best next crop?','Mandi prices','Fertiliser advice'].map(s => `<button class="chip">${s}</button>`).join('');
+$('chips').addEventListener('click', e => { if (e.target.classList.contains('chip')) send(e.target.textContent); });
+$('form').addEventListener('submit', e => { e.preventDefault(); const v = $('inp').value; $('inp').value = ''; send(v); });
+$('mic').onclick = () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return msg('Voice input is not supported in this browser. Try Chrome.');
+  const r = new SR(); r.lang = 'en-IN'; $('mic').textContent = '🎙️ Listening…';
+  r.onresult = e => send(e.results[0][0].transcript); r.onend = () => $('mic').textContent = '🎤 Talk'; r.onerror = () => $('mic').textContent = '🎤 Talk'; r.start();
+};
+
+/* ============ 5. EXPERIMENT ENGINE ============ */
+$('runExp').onclick = async () => {
+  const b = $('runExp'); b.disabled = true; b.textContent = 'Running simulation…';
+  const r = await API.experiment($('exp').value);
+  const mx = Math.max(r.c, r.t);
+  $('expOut').innerHTML = `<div class="fade text-xs"><p class="font-bold mb-2">${r.metric}</p>
+   ${[['Control',r.c,'#94a3b8'],['Test plot',r.t,'#16a34a']].map(([l,v,c]) => `<div class="mb-2"><div class="flex justify-between"><span>${l}</span><b>${v}${r.u}</b></div><div class="h-2 bg-slate-100 rounded"><div style="width:${v/mx*100}%;background:${c}" class="h-2 rounded"></div></div></div>`).join('')}
+   <p class="p-2 bg-blue-50 rounded text-blue-900">💡 ${r.tip}</p></div>`;
+  b.disabled = false; b.textContent = 'Run 14-day experiment';
+};
+
+/* ============ 6. INIT ============ */
+(async () => {
+  const [d, f, p] = await Promise.all([API.farm(), API.forecast(), API.prices()]);
+  $('fc').innerHTML = f.map(([n,i,t,r]) => `<div class="rounded-xl bg-slate-50 py-2"><p class="text-slate-500">${n}</p><p class="text-xl">${i}</p><p class="font-bold">${t}°</p><p class="text-blue-600">${r}%</p></div>`).join('');
+  $('mandi').innerHTML = p.map(([n,v,c]) => `<div class="flex justify-between bg-slate-50 rounded-lg px-3 py-2"><span>${n}</span><span><b>₹${v.toLocaleString('en-IN')}</b> <span class="${c[0]==='+'?'text-green-600':'text-red-500'}">${c}</span></span></div>`).join('');
+  drawGrid(); simulate();
+})();
+</script>
+</body>
+</html>
